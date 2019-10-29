@@ -78,6 +78,6 @@ constraint sboat[end] >= E;
 solve minimize end;
 output ["act = array2d(GUARD,TIME,\(act));\n"] ++
        ["end = \(end-1);\n"];
-%     [4, -1, 1, -1, 1, -1, 1, 0, 0, 0
-%      9, -1, 9, -1, 9, -1, 6, 0, 0, 0]
-% [0, 13, 13, 23, 23, 33, 33, 40, 40, 40, 40]
+% act = array2d(GUARD,TIME,[5, -1, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, -1, 15, 0, 0, 0, 0]);
+% end = 6;
+% ----------
