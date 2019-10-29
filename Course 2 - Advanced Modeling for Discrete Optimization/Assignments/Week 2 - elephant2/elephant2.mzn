@@ -28,19 +28,19 @@ array[TIME0] of var STONE: sboat;
 constraint forall(g in GUARD)(pos[g, 0] = false);
 constraint sboat[0] = 0;
 
-
 constraint forall(t in TIME, g in GUARD)(
                                           let {var bool: from = pos[g,t-1];
                                                var bool: to = pos[g,t];
                                                var ACT: action = act[g,t];} in
-                                          
-                                          (  (action = wait /\ to == from) \/ 
-                                             (action = to_bank /\ from = true /\ to = false) \/ 
-                                             (is_tired(g,t) = false /\ action <= hard[g] /\ from = false /\ to = true))
+                                            	 (action = wait <-> from = to) /\
+                                            	 (action = to_bank -> from) /\
+                                            	 (action > 0 -> to) /\ 
+                                            	 (is_tired(g,t) -> action <= 0) /\
+                                            	 action <= hard[g] 
                                         );
 
-
-
+%Check if guard is tired at t time, looking r steps back and seeing if there is
+% an action > than the easy one...
 predicate is_tired(var GUARD: g, var TIME: t) =
 let { var int: r = tired[g];
       var int: max_arr = 
