@@ -1,69 +1,68 @@
 int: T; % maximum time allowed;
 set of int: TIME = 1..T;
-set of int: TIME0 = 0..T;
 
-int: G; % number of guards
-set of int: GUARD = 1..G;
-set of int: GUARD0 = 0..G;
+int: G; %number of guards
 int: F; 
-set of int: FOOD = 0..F;
 int: W;
-set of int: WATER = 0..W;
 
-enum POS = { bank, boat }; 
-
-array[POS] of POS: opposite = [boat,bank];
-
-array[TIME0] of var POS: pos;              % elephant at time t
-array[TIME0] of var FOOD: food;            % food on bank at time t
-array[TIME0] of var WATER: water;          % water on bank at time t
-
-array[TIME] of var -F..F: move_food;      % move food +ve bank to boat, -ve boat to bank
+array[TIME] of var -F..F: move_food;     % move food +ve bank to boat, -ve boat to bank
 array[TIME] of var -W..W: move_water;     % move water +ve bank to boat, -ve boat to bank
-var TIME: end;                            % end time;
 
-predicate elephant_moves(var FOOD: food_here, var WATER: water_here) = 
-                         let { var FOOD: food_there = F - food_here; 
-                               var WATER: water_there = W - water_here; } in
-                         food_there = water_there /\ 
-                         food_there > food_here /\ water_there > water_here
-                         ;
+var TIME: end;
 
-%predicate elephant(var POS: pos, var FOOD: food_here, var WATER: water_here, var POS: new_pos) = 
-%                   if elephant_moves(food_here, water_here) then new_pos = opposite[pos] else
-%                   new_pos = pos /\ (food_here = 0 <-> water_here = 0)
-%                   endif;
-predicate elephant(var POS: pos, var FOOD: food_here, var WATER: water_here, var POS: new_pos) = 
-                   let { var bool: b = elephant_moves(food_here, water_here); } in 
-                   new_pos = [pos,opposite[pos]][b+1] /\
-                   (b \/ (food_here = 0 <-> water_here = 0));
-                   
+set of int: TIME0 = 0..T;
+array[TIME0] of var 0..F: fboat;
+array[TIME0] of var 0..W: wboat;
 
+enum POS = { Bank, Boat };
+array[TIME0] of var POS: pos;
 
+predicate move(var 0..F: fhere, var 0..W: wrhere) =
+               let {var 0..F: fthere = F - fhere,
+                    var 0..W: wrthere = W - wrhere; } in
+               (wrthere = fthere /\ fthere > fhere /\ wrthere > wrhere);
+               
+constraint pos[0] = Bank;
+constraint fboat[0] = 0;
+constraint wboat[0] = 0;
 
-constraint pos[0] = bank /\ food[0] = F /\ water[0] = W;
-
-constraint forall(t in TIME)(food[t] = food[t-1] - move_food[t]); 
-constraint forall(t in TIME)(water[t] = water[t-1] - move_water[t]); 
-
-constraint forall(t in TIME)(abs(move_food[t] + move_water[t]) <= G);
-constraint forall(t in TIME)(move_food[t] * move_water[t] >= 0);
-constraint forall(t in TIME)(t > end -> (move_food[t] = 0 /\ move_water[t] = 0));
+constraint forall(t in TIME)(fboat[t] = move_food[t] + fboat[t-1]);
+constraint forall(t in TIME)(wboat[t] = move_water[t] + wboat[t-1]);
 
 constraint forall(t in TIME)
-                 (if pos[t-1] = bank then 
-                     elephant(bank,food[t-1],water[t-1],pos[t])
-                  else
-                     elephant(boat,F-food[t-1],W-water[t-1],pos[t])
-                  endif);
+                 (abs(move_food[t]) + abs(move_water[t]) <= G);
 
-constraint pos[end] = boat /\ food[end] = F /\ water[end] = W; 
+constraint forall(t in TIME)
+%                  (if move_food[t] > 0 then move_water[t] >= 0
+%                   else true endif /\
+%                   if move_food[t] < 0 then move_water[t] <= 0
+%                   else true endif);
+                 (move_food[t] * move_water[t] >= 0);
 
+array[POS] of POS: opp = {Boat, Bank};
 
+predicate elephant(var POS: now, var 0..F: fhere, var 0..W: wrhere,
+                   var POS: next) = 
+%                    if move(fhere, wrhere) then
+%                       next = if now = Bank then Boat else Bank endif
+%                    else
+%                      next = now
+%                    endif;
+                   next = [now, opp[now] ][move(fhere, wrhere) + 1] /\
+                   (fhere = 0 <-> wrhere = 0);
 
-solve % :: int_search([end], input_order, indomain_min, complete)
-   %  :: seq_search([ int_search([end], input_order, indomain_min, complete),
-   %                  int_search([ if i mod 2 = 1 then move_food[i div 2 +1] 
-   %                               else move_water[i div 2] endif | i  in 1..T*2 ], 
-   %                               input_order, indomain_max, complete) ])
-         minimize end; 	
+constraint forall(t in TIME)
+            (let { var 0..F: fhere = [F - fboat[t-1], fboat[t-1]][pos[t-1]];
+                   var 0..W: wrhere = [W - wboat[t-1], wboat[t-1]][pos[t-1]]; } in
+             elephant(pos[t-1], fhere, wrhere, pos[t]));
+             
+
+constraint forall(t in TIME)
+                 (t > end -> move_water[t] = 0 /\ move_food[t] = 0);
+constraint pos[end] = Boat /\ fboat[end] = 0 /\ wboat[end] = 0;
+
+solve s;
+
+% move_food = [0, 3, -2, -1, 0,0,0,0,0,0];
+% move_water = [3, 0, -1, -2, 0,0,0,0,0,0];
+% end = 4;
