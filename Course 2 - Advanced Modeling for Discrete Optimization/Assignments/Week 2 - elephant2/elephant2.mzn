@@ -32,11 +32,11 @@ constraint forall(t in TIME, g in GUARD)(
                                           let {var bool: from = pos[g,t-1];
                                                var bool: to = pos[g,t];
                                                var ACT: action = act[g,t];} in
-                                            	 (action = wait <-> from = to) /\
-                                            	 (action = to_bank -> from) /\
-                                            	 (action > 0 -> to) /\ 
-                                            	 (is_tired(g,t) -> action <= 0) /\
-                                            	 action <= hard[g] 
+                                            	 (action = wait <-> from = to) /\ % if action = wait, previous(current) and next pos should be equal
+                                            	 (action = to_bank -> from) /\ % if action = to bank, previous(current) pos is true(boat)
+                                            	 ((action = easy[g] \/ action = hard[g]) -> to) /\ % if action is easy or hard, next pos should be true(boat)
+                                            	 (is_tired(g,t) -> (action = wait \/ action = to_bank)) /\ %if guard is tired, he/she can only wait or go to bank
+                                            	 (action = - 1 \/ action = 0 \/ action = easy[g] \/ action = hard[g]) % possible actions
                                         );
 
 %Check if guard is tired at t time, looking r steps back and seeing if there is
@@ -46,7 +46,7 @@ let { var int: r = tired[g];
       var int: max_arr = 
       max([act[g, t2]*(t2 in max(1, t-r)..max(1, t-1)) 
           | t2 in TIME]); } in
-max_arr > easy[g];
+max_arr = hard[g];
               
 %Sum stones into sboat
 constraint forall(t in TIME)(
