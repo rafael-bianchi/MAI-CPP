@@ -50,19 +50,17 @@ max_arr = hard[g];
               
 %Sum stones into sboat
 constraint forall(t in TIME)(
-                              sboat[t] = sum(g in GUARD)(if act[g,t] > 0 then act[g,t] else 0 endif) + sboat[t-1]
+                              sboat[t] = sum(g in GUARD)(max(0, act[g,t])) + sboat[t-1]
                             );
 
 % % Limit # guards in pier
 constraint forall(t in TIME)(
-                              sum(g in GUARD)(abs(act[g,t]) > 0) <= p  
+                              sum(g in GUARD)(act[g,t] != 0) <= p
                           );
 
 
 % Moving in the same direction
-constraint forall(t in TIME)(
-                              abs(sum(g in GUARD)(act[g,t])) == sum(g in GUARD)(abs(act[g,t]))                 
-                            );        
+constraint forall(t in TIME, g1, g2 in GUARD)(act[g1,t] * act[g2,t] >= 0) ;  
                         
 % Limit number guards on Boat at time t
 constraint forall(t in TIME)(
@@ -70,7 +68,7 @@ constraint forall(t in TIME)(
                             );
                             
 % Actions after the end should be 0?
-constraint forall(g in GUARD, t in TIME)(t >= end -> act[g,t] = 0);
+constraint forall(g in GUARD, t in TIME where t >= end)(act[g,t] = 0);
 
 % Final state
 constraint sboat[end] >= E;
