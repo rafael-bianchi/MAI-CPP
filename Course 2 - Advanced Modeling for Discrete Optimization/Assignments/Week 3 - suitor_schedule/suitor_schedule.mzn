@@ -68,6 +68,12 @@ constraint forall(k in 1..n-1)(kungfu[k] + lessontime + minsep <= kungfu[k+1]);
 constraint forall(m in MEETING)(stage != C -> consecutive[m] = 0);
 constraint forall(k in KUNGFU)(stage != C -> kfm[k] = 0);
 
+%constraint forall(k in KUNGFU) (kungfu[k] > 0 /\ kungfu[k] <= 24*ndays + n*(minsep+lessontime));  
+%constraint forall(k in 1..n-1)(kungfu[k]); 
+%
+%constraint forall(m in MEETING)(stage != C -> consecutive[m] = 0);
+%constraint forall(k in KUNGFU)(stage != C -> kfm[k] = 0);
+
 constraint forall(k in KUNGFU  where (kungfu[k] <= 24*ndays) ) (
     if stage != C then true else
     exists(m in MEETING)(kungfu[k] + lessontime = start[m] + dur[m] /\ kfm[k] = m)
@@ -86,6 +92,12 @@ var int: obj_stages_A_and_B = sum(m in MEETING where suitor[m] = LiuBei)(dur[m])
 var int: liu_bei_meetings = sum(m in MEETING where suitor[m] = LiuBei)(dur[m] - consecutive[m]*lessontime);
 var int: kungfu_classes = sum(k in KUNGFU)(if kungfu[k] <= 24 * ndays then 1 else 0 endif);
 var int: obj_stage_C = 100 * kungfu_classes + liu_bei_meetings;
+
+%var int: obj_stages_A_and_B = sum(m in MEETING where suitor[m] = LiuBei)(dur[m]);
+%var int: liu_bei_meetings = sum(m in MEETING where suitor[m] = LiuBei)(dur[m] - consecutive[m]);
+%var int: kungfu_classes = sum(k in KUNGFU)(kungfu[k] <= 24);
+%var int: obj_stage_C = 50 * kungfu_classes + liu_bei_meetings;
+
 
 var int: final_obj;
 constraint if stage != C then final_obj = obj_stages_A_and_B else final_obj = obj_stage_C endif;
